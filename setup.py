@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='my_molecular_dynamics',
+    name='moldyn',
     version='0.1.0',
     author='Prabhath Chilakalapudi',
     description='A basic molecular dynamics simulation package',
