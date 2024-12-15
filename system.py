@@ -24,7 +24,7 @@ class System:
         self.integrator = self.__select_integrator()
 
     def __initialize_positions(self):
-        self.positions = np.random.uniform(0, self.box_size, (self.num_atoms, 3))
+        self.positions = np.random.uniform(low=[0.0, 0.0, 0.0], high=self.box_size, size=(self.num_atoms, 3))
 
     def __initialize_atom_types(self):
         self.atom_types = np.random.choice(len(self.masses_list), self.num_atoms)
