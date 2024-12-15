@@ -15,28 +15,6 @@ class LennardJonesCalculator(BaseCalculator):
         self.epsilon = epsilon
         self.sigma = sigma
         self.cutoff = cutoff
-
-    def compute_forces_slow(self):
-        positions = self.system.positions
-        num_atoms = self.system.num_atoms
-        forces = np.zeros_like(positions)
-
-        for i in range(num_atoms):
-            for j in range(i+1, num_atoms):
-                r_ij = positions[j] - positions[i]
-                r = np.linalg.norm(r_ij)
-
-                if (r>self.cutoff or r==0):
-                    continue
-
-                #Calculate lj forces
-                f_scalar = 24 * self.epsilon * ((2 * (self.sigma / r) ** 12) - (self.sigma / r) ** 6) / r ** 2
-                f_vector = f_scalar * (r_ij/r)
-
-                forces[i] += f_vector
-                forces[j] -= f_vector
-
-        return forces
     
     def compute_forces(self):
         positions = self.system.positions
@@ -45,16 +23,13 @@ class LennardJonesCalculator(BaseCalculator):
         distances_vector = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         distances_scalar = np.linalg.norm(distances_vector, axis=-1)
 
-        # Make sure division later by 0 is handled
-        masked_distances = np.where((distances_scalar < self.cutoff) & (distances_scalar > 0), distances_scalar, np.inf)
+        distances_mask = (distances_scalar < self.cutoff) & (distances_scalar > 0)
         
-        forces_scalar = 24 * self.epsilon * ((2 * (self.sigma / masked_distances) ** 12) - (self.sigma / masked_distances) ** 6) / masked_distances ** 2
+        forces_scalar = np.zeros_like(distances_scalar)
+        forces_scalar[distances_mask] = 24 * self.epsilon * ((2 * (self.sigma / distances_scalar[distances_mask]) ** 12) - (self.sigma / distances_scalar[distances_mask]) ** 6) / distances_scalar[distances_mask] ** 2
 
-        # To make sure
-        forces_scalar = np.where(forces_scalar != np.inf, forces_scalar, 0)
-
-        distances_scalar_safe = np.where(distances_scalar != 0, distances_scalar, np.inf)
-        forces_vector = distances_vector * (forces_scalar[..., np.newaxis]/distances_scalar_safe[..., np.newaxis])
+        forces_vector = np.zeros_like(distances_vector)
+        forces_vector[distances_mask, :] = distances_vector[distances_mask, :] * (forces_scalar[distances_mask, np.newaxis]/distances_scalar[distances_mask, np.newaxis])
 
         forces = np.sum(forces_vector, axis=1)
 
@@ -74,7 +49,6 @@ class LennardJonesCalculator(BaseCalculator):
         masked_distances = np.where((upper_distances < self.cutoff) & (upper_distances > 0), upper_distances, np.inf)
         
         forces_upper = 24 * self.epsilon * ((2 * (self.sigma / masked_distances) ** 12) - (self.sigma / masked_distances) ** 6) / masked_distances ** 2
-
         forces_all = forces_upper + (-1)*forces_upper.T
 
         # To make sure
@@ -82,5 +56,27 @@ class LennardJonesCalculator(BaseCalculator):
         forces_vector = distances_vector * (forces_scalar[..., np.newaxis]/distances_scalar_safe[..., np.newaxis])
 
         forces = np.sum(forces_vector, axis=1)
+
+        return forces
+    
+    def compute_forces_slow(self):
+        positions = self.system.positions
+        num_atoms = self.system.num_atoms
+        forces = np.zeros_like(positions)
+
+        for i in range(num_atoms):
+            for j in range(i+1, num_atoms):
+                r_ij = positions[j] - positions[i]
+                r = np.linalg.norm(r_ij)
+
+                if (r>self.cutoff or r==0):
+                    continue
+
+                #Calculate lj forces
+                f_scalar = 24 * self.epsilon * ((2 * (self.sigma / r) ** 12) - (self.sigma / r) ** 6) / r ** 2
+                f_vector = f_scalar * (r_ij/r)
+
+                forces[i] += f_vector
+                forces[j] -= f_vector
 
         return forces

@@ -7,11 +7,13 @@ setup(
     description='A basic molecular dynamics simulation package',
     packages=find_packages(),
     install_requires=[
-        'numpy',  # Add other dependencies here
+        'numpy',
+        'pathlib',
+        'time'
     ],
     entry_points={
         'console_scripts': [
-            'run-md=run_simulation:main',  # Optional CLI entry point
+            'run-md=run_simulation:main',
         ],
     },
     classifiers=[

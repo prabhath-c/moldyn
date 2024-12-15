@@ -1,7 +1,8 @@
-import os
+from pathlib import Path
 
 def read_input_file(file_path):
-    if not os.path.exists(file_path):
+    file = Path(file_path)
+    if not file.exists():
         raise FileNotFoundError(f"Input file: {file_path} does not exist.")
     
     parameters = {}

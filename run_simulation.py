@@ -1,4 +1,4 @@
-from utils.input_reader import read_input_file
+from utils.input_handler import read_input_file
 from system import System
 from dynamics.dynamics import Dynamics
 from time import time
