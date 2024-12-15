@@ -16,7 +16,7 @@ class LennardJonesCalculator(BaseCalculator):
         self.sigma = sigma
         self.cutoff = cutoff
 
-    def compute_forces(self):
+    def compute_forces_slow(self):
         positions = self.system.positions
         num_atoms = self.system.num_atoms
         forces = np.zeros_like(positions)
@@ -37,5 +37,50 @@ class LennardJonesCalculator(BaseCalculator):
                 forces[j] -= f_vector
 
         return forces
+    
+    def compute_forces(self):
+        positions = self.system.positions
+        forces = np.zeros_like(positions)
 
+        distances_vector = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+        distances_scalar = np.linalg.norm(distances_vector, axis=-1)
 
+        # Make sure division later by 0 is handled
+        masked_distances = np.where((distances_scalar < self.cutoff) & (distances_scalar > 0), distances_scalar, np.inf)
+        
+        forces_scalar = 24 * self.epsilon * ((2 * (self.sigma / masked_distances) ** 12) - (self.sigma / masked_distances) ** 6) / masked_distances ** 2
+
+        # To make sure
+        forces_scalar = np.where(forces_scalar != np.inf, forces_scalar, 0)
+
+        distances_scalar_safe = np.where(distances_scalar != 0, distances_scalar, np.inf)
+        forces_vector = distances_vector * (forces_scalar[..., np.newaxis]/distances_scalar_safe[..., np.newaxis])
+
+        forces = np.sum(forces_vector, axis=1)
+
+        return forces
+    
+    def compute_forces_upper(self):
+        positions = self.system.positions
+        forces = np.zeros_like(positions)
+
+        distances_vector = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+        distances_scalar = np.linalg.norm(distances_vector, axis=-1)
+        distances_scalar_safe = np.where(distances_scalar > 0, distances_scalar, np.inf)
+
+        upper_distances = np.triu(distances_scalar_safe, k = 1)
+
+        # Make sure division later by 0 is handled
+        masked_distances = np.where((upper_distances < self.cutoff) & (upper_distances > 0), upper_distances, np.inf)
+        
+        forces_upper = 24 * self.epsilon * ((2 * (self.sigma / masked_distances) ** 12) - (self.sigma / masked_distances) ** 6) / masked_distances ** 2
+
+        forces_all = forces_upper + (-1)*forces_upper.T
+
+        # To make sure
+        forces_scalar = np.where(forces_all != np.inf, forces_all, 0)
+        forces_vector = distances_vector * (forces_scalar[..., np.newaxis]/distances_scalar_safe[..., np.newaxis])
+
+        forces = np.sum(forces_vector, axis=1)
+
+        return forces
