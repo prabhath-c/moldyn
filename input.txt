@@ -1,11 +1,11 @@
 masses 1.0 12.0 16.0
-num_atoms 1500
+num_atoms 3000
 box_size 10.0 10.0 10.0
 
 temperature 300
 
 time_step 0.0001
-max_steps 50
+max_steps 100
 
 potential lj 1.0 1.0 3.5
 integrator velocity_verlet

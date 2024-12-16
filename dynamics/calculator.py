@@ -18,8 +18,7 @@ class LennardJonesCalculator(BaseCalculator):
     
     def compute_forces(self):
         positions = self.system.positions
-        forces = np.zeros_like(positions)
-
+        
         distances_vector = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         distances_scalar = np.linalg.norm(distances_vector, axis=-1)
 
@@ -31,10 +30,12 @@ class LennardJonesCalculator(BaseCalculator):
         forces_vector = np.zeros_like(distances_vector)
         forces_vector[distances_mask, :] = distances_vector[distances_mask, :] * (forces_scalar[distances_mask, np.newaxis]/distances_scalar[distances_mask, np.newaxis])
 
+        forces = np.zeros_like(positions)
         forces = np.sum(forces_vector, axis=1)
 
         return forces
     
+    # For testing purposes only
     def compute_forces_upper(self):
         positions = self.system.positions
         forces = np.zeros_like(positions)
@@ -59,6 +60,7 @@ class LennardJonesCalculator(BaseCalculator):
 
         return forces
     
+    # For testing purposes only
     def compute_forces_slow(self):
         positions = self.system.positions
         num_atoms = self.system.num_atoms
